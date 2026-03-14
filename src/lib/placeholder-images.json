@@ -1,0 +1,10 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "An abstract image representing resume analysis and optimization.",
+      "imageUrl": "https://picsum.photos/seed/jobfit/1200/800",
+      "imageHint": "resume analysis"
+    }
+  ]
+}

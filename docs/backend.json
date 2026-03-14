@@ -1,0 +1,248 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Stores profile information for a user of the JobFit AI application. This entity represents the user's identity within the application after authentication by an external system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity, typically provided by an external authentication system."
+        },
+        "email": {
+          "type": "string",
+          "description": "The primary email address of the user, used for identification and communication.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The user's last name."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "createdAt"
+      ]
+    },
+    "Resume": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Resume",
+      "type": "object",
+      "description": "Represents a resume document uploaded by a user for analysis within the JobFit AI application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Resume entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who uploaded this resume. (Relationship: UserProfile 1:N Resume)"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The original file name of the uploaded resume."
+        },
+        "storagePath": {
+          "type": "string",
+          "description": "The path or URL where the uploaded resume document (e.g., PDF) is stored."
+        },
+        "uploadDateTime": {
+          "type": "string",
+          "description": "Timestamp when the resume was uploaded.",
+          "format": "date-time"
+        },
+        "fileHash": {
+          "type": "string",
+          "description": "A hash of the resume file content to detect duplicates or changes."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "fileName",
+        "storagePath",
+        "uploadDateTime"
+      ]
+    },
+    "JobDescription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "JobDescription",
+      "type": "object",
+      "description": "Represents a job description provided by a user for analysis against a resume within the JobFit AI application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the JobDescription entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who provided this job description. (Relationship: UserProfile 1:N JobDescription)"
+        },
+        "title": {
+          "type": "string",
+          "description": "A user-defined title or brief identifier for the job description."
+        },
+        "descriptionText": {
+          "type": "string",
+          "description": "The full text content of the job description."
+        },
+        "inputDateTime": {
+          "type": "string",
+          "description": "Timestamp when the job description was entered or uploaded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "descriptionText",
+        "inputDateTime"
+      ]
+    },
+    "AnalysisReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AnalysisReport",
+      "type": "object",
+      "description": "Stores the comprehensive results of a single ATS compliance and match analysis performed on a resume against a job description.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who owns this report."
+        },
+        "resumeFileName": {
+          "type": "string",
+          "description": "The name of the resume file that was analyzed."
+        },
+        "jobDescription": {
+          "type": "string",
+          "description": "The text of the job description used for analysis."
+        },
+        "analysisDateTime": {
+          "type": "string",
+          "description": "Timestamp when the analysis was performed.",
+          "format": "date-time"
+        },
+        "atsAnalysis": {
+          "type": "object",
+          "description": "The results of the ATS compliance analysis."
+        },
+        "improvementInsights": {
+          "type": "object",
+          "description": "The AI-generated insights for improving the resume."
+        }
+      },
+      "required": [
+        "userId",
+        "analysisDateTime",
+        "atsAnalysis",
+        "improvementInsights",
+        "resumeFileName",
+        "jobDescription"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information, acting as the root for all user-specific data. Access is restricted to the authenticated user whose UID matches 'userId'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching 'request.auth.uid'."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/resumes/{resumeId}",
+        "definition": {
+          "entityName": "Resume",
+          "schema": {
+            "$ref": "#/backend/entities/Resume"
+          },
+          "description": "Contains resume documents uploaded by a specific user. Includes denormalized 'userId' (matching the path parameter) for authorization independence. Access is restricted to the owner of the user profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this resume."
+            },
+            {
+              "name": "resumeId",
+              "description": "The unique identifier for the resume document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/jobDescriptions/{jobDescriptionId}",
+        "definition": {
+          "entityName": "JobDescription",
+          "schema": {
+            "$ref": "#/backend/entities/JobDescription"
+          },
+          "description": "Stores job descriptions entered by a specific user. Includes denormalized 'userId' (matching the path parameter) for authorization independence. Access is restricted to the owner of the user profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this job description."
+            },
+            {
+              "name": "jobDescriptionId",
+              "description": "The unique identifier for the job description document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/analysisReports/{reportId}",
+        "definition": {
+          "entityName": "AnalysisReport",
+          "schema": {
+            "$ref": "#/backend/entities/AnalysisReport"
+          },
+          "description": "Stores analysis reports generated for a user's resume against a job description. The 'AnalysisReport' entity MUST include a 'userId' field in its document data (denormalized from the owning 'UserProfile') to ensure Authorization Independence and simplify security rules. Access is restricted to the owner of the user profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this analysis report."
+            },
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the analysis report."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to be secure, scalable, and highly debuggable, strictly adhering to the core design principles and strategy mandates. All user-specific data is organized under a top-level `/users/{userId}` collection, which serves as the secure root for individual user data. This approach inherently supports Authorization Independence and Query as a Privilege (QAP).\n\n1.  **Authorization Independence (CRITICAL):** By nesting all user-owned entities (User Profiles, Resumes, Job Descriptions, and Analysis Reports) directly under `/users/{userId}`, authorization rules can consistently rely on `request.auth.uid == userId` (where `userId` is the wildcard in the path). This eliminates the need for expensive and rule-breaking `get()` calls to parent or related documents to determine ownership or access rights. Each document's access is self-contained based on its path and optionally denormalized `userId` field.\n\n2.  **Denormalization for Authorization:** For `Resume` and `JobDescription`, the `userId` is already part of their schema and will be validated to match the `{userId}` in the path. For `AnalysisReport`, which logically belongs to the user who performed the analysis (and thus owns both the `Resume` and `JobDescription`), we mandate the inclusion of a `userId` field within the `AnalysisReport` document itself. This denormalization is crucial for authorization independence, allowing security rules to verify `resource.data.userId == userId` without needing to fetch the associated `Resume` or `JobDescription` documents.\n\n3.  **QAPs (Query as a Privilege):** The hierarchical structure directly facilitates secure `list` operations. A user can only `list` documents within their own `/users/{userId}` subcollections. For instance, querying `/users/{request.auth.uid}/resumes` will automatically return only the authenticated user's resumes. Security rules for `list` operations become trivial and robust: `allow list: if request.auth.uid == userId;` This prevents data leakage and simplifies client-side data fetching.\n\n4.  **Structural Segregation & Access Modeling:** All documents within a given subcollection (e.g., `/users/{userId}/resumes`) share the same security posture (owner-only access). This homogeneous security environment makes rules simple and predictable. The use of hierarchical paths for user-owned and nested data (Strategy C) is consistently applied across all entities.\n\n5.  **Data Clarity:** Wildcards (`{userId}`, `{resumeId}`, etc.) are semantically descriptive, enhancing rule readability and maintainability. The explicit inclusion of `userId` in all user-owned documents, even when redundant with the path, ensures clarity of ownership and simplifies rule logic."
+  }
+}

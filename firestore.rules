@@ -1,0 +1,155 @@
+/**
+ * # Core Philosophy
+ * This ruleset enforces a strict user-ownership security model. All data is
+ * siloed within a user-specific data tree, ensuring that users can only ever
+ * access their own information. This creates a strong privacy boundary between
+ * users by default.
+ *
+ * # Data Structure
+ * The entire data model is hierarchical, rooted in the `/users/{userId}`
+ * collection. All user-generated content, including resumes, job descriptions,
+ * and analysis reports, are stored in subcollections under their specific
+ * user document.
+ *
+ * # Key Security Decisions
+ * - **No User Enumeration**: Listing the top-level `/users` collection is
+ *   explicitly forbidden to prevent discovery of other users on the platform.
+ * - **Strict Ownership**: All access controls (read, write, delete) are
+ *   governed by a single principle: the authenticated user's ID (`request.auth.uid`)
+ *   must match the `{userId}` wildcard in the document path.
+ * - **Path-Based Security**: The hierarchical structure is the primary mechanism
+ *   for securing list queries. Users can only query collections within their own
+ *   `/users/{userId}` path, effectively scoping all queries to their own data.
+ *
+ * # Denormalization for Authorization
+ * To ensure fast and secure authorization checks, all documents within a user's
+ * subcollections (e.g., resumes, jobDescriptions) must contain a `userId` field.
+ * This field is validated on creation to match the user's ID from the path. This
+ * strategy avoids costly and complex `get()` calls to parent documents and makes
+ * each document's authorization logic self-contained.
+ *
+ * # Structural Segregation
+ * Data is segregated by type into distinct subcollections (resumes, jobDescriptions,
+ * analysisReports). Since all data is private to the user, this structure simplifies
+ * rule management by applying a consistent ownership policy to all documents within
+ * a user's data tree.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions to provide auditable and maintainable logic.
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user is the owner of the resource
+     * identified by the given `userId`.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the currently authenticated user is the owner of an EXISTING
+     * resource. Used for safe updates and deletes.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates that the incoming UserProfile document contains an `id` field
+     * that matches the user's auth UID. Enforces relational integrity.
+     */
+    function hasValidUserProfileId(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Enforces that the `id` field of a UserProfile document cannot be changed
+     * after creation.
+     */
+    function isUserProfileIdImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+    
+    /**
+     * Validates that an incoming subcollection document contains a `userId` field
+     * that matches the parent user document's ID. Enforces denormalization.
+     */
+    function hasValidUserId(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Enforces that the `userId` field on a subcollection document cannot be
+     * changed after creation. This prevents re-assigning ownership.
+     */
+    function isUserIdImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * @description Rules for the UserProfile document, which acts as the root for all user data.
+     * @path /users/{userId}
+     * @allow (create) An authenticated user creating their own profile document for the first time. `request.auth.uid` must match `{userId}`.
+     * @deny (get) An anonymous user or a different authenticated user trying to read another user's profile.
+     * @principle Enforces self-creation and ownership. Forbids user enumeration by disallowing `list` operations.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // CRITICAL: Prevents enumerating all users in the application.
+      allow create: if isOwner(userId) && hasValidUserProfileId(userId);
+      allow update: if isExistingOwner(userId) && isUserProfileIdImmutable();
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Rules for a user's private collection of resumes.
+       * @path /users/{userId}/resumes/{resumeId}
+       * @allow (create) The user with `{userId}` creating a new resume document in their own subcollection.
+       * @deny (list) A different user trying to list resumes from another user's path.
+       * @principle Restricts access to a user's own data tree and validates relational integrity via the denormalized `userId` field.
+       */
+      match /resumes/{resumeId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidUserId(userId);
+        allow update: if isExistingOwner(userId) && isUserIdImmutable();
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Rules for a user's private collection of job descriptions.
+       * @path /users/{userId}/jobDescriptions/{jobDescriptionId}
+       * @allow (get) The user with `{userId}` reading a job description they created.
+       * @deny (create) An anonymous user trying to create a job description.
+       * @principle Restricts access to a user's own data tree and validates relational integrity via the denormalized `userId` field.
+       */
+      match /jobDescriptions/{jobDescriptionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidUserId(userId);
+        allow update: if isExistingOwner(userId) && isUserIdImmutable();
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Rules for a user's private collection of analysis reports.
+       * @path /users/{userId}/analysisReports/{reportId}
+       * @allow (delete) The user with `{userId}` deleting a report from their collection.
+       * @deny (update) A different user trying to modify another user's analysis report.
+       * @principle Restricts access to a user's own data tree and validates relational integrity via the denormalized `userId` field. This rule assumes the `userId` field exists on the document as mandated by the data model reasoning.
+       */
+      match /analysisReports/{reportId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidUserId(userId);
+        allow update: if isExistingOwner(userId) && isUserIdImmutable();
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+  }
+}
