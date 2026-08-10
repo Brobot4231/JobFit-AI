@@ -1,23 +1,115 @@
-AI-Powered Resume ATS Checker & Analyzer
-This application helps both HR professionals and job candidates evaluate resumes against Applicant Tracking System (ATS) standards and job description requirements.
-Core Features:
-- 📄 Resume Upload: Users can upload resumes in PDF format.
-- 📝 Job Description Input: A dedicated section allows entry of the target job description.
-- ⚙️ ATS Compliance Analysis: The system checks whether the resume meets ATS formatting and keyword conditions.
-- 📊 ATS Score & Match Evaluation: Provides an overall ATS score and indicates how well the resume aligns with the job description.
-- 🔍 Improvement Insights: Highlights weak areas, identifies issues, and offers actionable solutions to optimize the resume for ATS and recruiter impact.
-Advanced Features:
-- 🔑 Keyword Density Analysis: Evaluate how frequently job-specific keywords appear in the resume compared to the job description, ensuring optimal keyword usage without overstuffing.
-- 🖋️ Formatting & Layout Compliance: Detect issues like tables, graphics, or unusual fonts that may break ATS parsing. Suggest clean, ATS-friendly formatting alternatives.
-- 📂 Section Completeness Check: Verify the presence of essential sections (Contact Info, Education, Work Experience, Skills, Certifications) and flag missing ones.
-- 🛠️ Skill Gap Analysis: Compare listed skills against required skills in the job description, highlighting gaps and suggesting additions.
-- ⚡ Action Verb & Impact Language Suggestions: Recommend stronger verbs and quantifiable achievements to make the resume more compelling.
-- 🔁 Duplicate & Redundancy Detection: Identify repetitive phrases or overlapping content that weaken clarity.
-- 🎯 Job Description Tailoring: Provide tailored recommendations for customizing the resume to specific roles, industries, or seniority levels.
-- 📖 Readability & Clarity Score: Assess sentence length, jargon, and readability to ensure the resume is recruiter-friendly.
-- 🤖 AI-Powered Suggestions: Offer auto-generated bullet points or phrasing improvements aligned with the job description.
-- Version Control: Allow users to save multiple improved versions of their resume for different job applications.
-- Ranking Feature: Allows HR to observe most ats friendly resume by ranking resume based on ats and jd compatibility under same job description.
-Outcome:
-A clear, data-driven evaluation that empowers candidates to refine their resumes for better visibility in ATS systems and helps HR teams quickly assess alignment with job requirements.
+# 🚀 JobFit AI — Resume + ATS Assistant
 
+> An AI-powered assistant to analyze resumes, improve content, match keywords for ATS, and generate tailored suggestions.
+
+---
+
+## 📌 Overview
+
+JobFit AI helps job seekers optimize resumes for applicant tracking systems (ATS) and hiring teams. The app provides automated ATS-compliance analysis, keyword matching, bullet-point enhancement, and personalized improvement insights powered by GenKit AI flows and Firebase-backed data storage.
+
+---
+
+## ✨ Features
+
+- 🧾 ATS compliance analysis with suggestions for better keyword coverage
+- 🔍 Resume keyword matching against job descriptions
+- ✏️ Bullet-point suggestions and rewrite assistance
+- 📈 Improvement insights and scoring for resumes
+- 💬 AI-driven flows implemented with `genkit` for fast iteration
+- 🔒 Authentication and user data via Firebase (Firestore)
+- 📊 Basic analytics and history for user submissions
+- 🛡 Client-side and server-side validation for uploads and inputs
+
+---
+
+## 🛠️ Tech Stack
+
+| Category | Tools |
+|----------|-------|
+| **Frontend** | Next.js, React, TypeScript |
+| **Styling** | Tailwind CSS, `tailwindcss-animate` |
+| **AI / LLM** | GenKit (`genkit` + `@genkit-ai/google-genai`) |
+| **Auth & DB** | Firebase (Auth, Firestore) |
+| **Hosting / Config** | Vercel / Next.js tuning (see `next.config.ts`) |
+| **Utilities** | react-hook-form, zod, date-fns, recharts |
+
+---
+
+## ⚙️ Installation
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd JobFit-AI-main
+
+# Install dependencies
+npm install
+# or
+# yarn install
+```
+
+> Create a `.env.local` file (or set env vars in your hosting provider) with required keys. Example keys are listed in `env.txt` but DO NOT commit secrets to source control.
+
+Required env examples:
+
+- `GEMINI_API_KEY` — LLM API key (store securely)
+- `NEXT_PUBLIC_FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, etc. — Firebase config values
+
+---
+
+## 🚀 Development
+
+```bash
+# Run the Next.js dev server (port set in package.json)
+npm run dev
+
+# Start GenKit AI flows for local AI development
+npm run genkit:dev
+# or
+npm run genkit:watch
+```
+
+Useful scripts (from `package.json`):
+
+- `dev` — Run Next.js in development (`next dev --turbopack -p 9002`)
+- `build` — Build for production (`next build`)
+- `start` — Start production server (`next start`)
+- `lint` — Run linter (`next lint`)
+- `typecheck` — Run TypeScript typecheck (`tsc --noEmit`)
+
+---
+## 🧭 Usage
+
+1. Start the dev server with `npm run dev` and open the app in your browser (`http://localhost:9002` by default).
+2. Configure `.env.local` with your `GEMINI_API_KEY` and Firebase credentials.
+3. Use the web UI to upload or paste a resume and a job description to get ATS insights and suggestions.
+4. Use the GenKit flows during development to iterate on LLM prompts and behavior (`npm run genkit:dev`).
+
+---
+
+## 💡 Notes
+
+- AI flows live under `src/ai/flows/` and can be extended or tuned with `genkit`.
+- Firestore rules are in `firestore.rules`; review them before deploying to production.
+- Avoid committing any API keys or secrets. Use environment variables or secret management in your hosting provider.
+
+---
+
+## 🚀 Future Improvements
+
+- Add exportable resume templates and PDF generation
+- Provide in-depth analytics and trend charts for candidate improvement
+- Add user profiles and saved job matching history
+- Multi-language support for resume suggestions
+- Access controls and team/career-coach collaboration features
+
+---
+
+## 🙏 Acknowledgements
+
+- Built with Next.js, React, and Tailwind CSS
+- Powered by GenKit AI flows for LLM-driven features
+- Firebase for authentication and data storage
+
+---
